@@ -11,7 +11,7 @@ import json
 
 from slack_sdk import WebClient
 
-from . import calc_rent
+from . import calc_rent, get_sum_from_message, ParseError
 from .calc_rent import ConfigData, calculate_rent_due
 
 RATE_LIMIT = 0.5  # seconds
@@ -31,19 +31,12 @@ def get_user_dict():
     print(json.dumps(user_dict, indent=4))
 
 
-def get_sum_from_message(message: str) -> int:
-    """
-    gets all of the numbers, assumes they are in dollars
-    returns the number of cents of the sum
-    """
-    numbers = []
-    for word in message.split():
-        no_money = word.strip("$")
-        try:
-            numbers.append(float(no_money) * 100)
-        except ValueError:
-            pass
-    return int(sum(numbers))
+
+def test_message():
+    client = WebClient(environ["SLACK_API_KEY"])
+    config_data = ConfigData.fromDict(json.loads(CONFIG_FILE.read_text("utf-8")))
+    message = "test"
+    client.chat_postMessage(channel=config_data.channel_id, text=message)
 
 
 def run_bot(config_data: ConfigData):
@@ -54,11 +47,19 @@ def run_bot(config_data: ConfigData):
     if not input_message.startswith("!rent"):
         sys.stderr.write("Last message was not invoking rent command")
         sys.exit(3)
-    utilities_owed = get_sum_from_message(input_message)
-    output_messages, _ = calculate_rent_due(config_data, set(), utilities_owed)
+    try:
+        utilities_owed, adjustments = get_sum_from_message(input_message)
+    except ParseError as e:
+        message = f"Syntax error: {e} is NOT ALLOWED!"
+        client.chat_postMessage(channel=config_data.channel_id, text=message)
+        sys.stderr.write(message)
+        sys.exit(5)
+        
+    output_messages, _ = calculate_rent_due(config_data, set(), utilities_owed, adjustments=adjustments)
     for message in output_messages:
         time.sleep(RATE_LIMIT)
         client.chat_postMessage(channel=config_data.channel_id, text=message)
 
 
+# test_message()
 run_bot(ConfigData.fromDict(json.loads(CONFIG_FILE.read_text("utf-8"))))

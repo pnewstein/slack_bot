@@ -13,5 +13,5 @@ setuptools.setup(
     url="https://github.com/pnewstein/slack_bot",
     packages=["slack_bot"],
     python_requires=">=3.10",
-    install_requires=["slack-sdk"],
+    install_requires=["slack-sdk", "pytest"],
 )

@@ -70,6 +70,7 @@ def calculate_rent_due(
     config_data: ConfigData,
     utility_excluded: set[str],
     total_variable_utilities: int,
+    adjustments: dict[str: int],
 ) -> tuple[list[str], dict[str, int]]:
     """
     returns a list of formated string explaining the math, and a dict for what each member pays
@@ -77,9 +78,11 @@ def calculate_rent_due(
 
     Raises ExludedDoesNotExist
     """
+    assert all(person in config_data.fraction_map for person in adjustments)
     calculation_lines: list[str] = []
     calculation_lines.append(f"We owe ${config_data.rent/100:.2f} in rent")
     total_utilities = total_variable_utilities + config_data.xfinity
+    calculation_lines.append(f"Utilities are ${total_variable_utilities/100:.2f} above + ${config_data.xfinity/100:.2f} from xfinity")
     # Figure out utilities
     utility_payers = set(config_data.fraction_map.keys())
     utility_payers.discard("Empty")
@@ -134,18 +137,34 @@ def calculate_rent_due(
                     f"{person} owes ${persons_rent/100:.2f} (rent)"
                 )
         if person == config_data.variable_utility_payer:
-            total_owed_utility_payer = total_owed - total_variable_utilities
+            if person in adjustments:
+                total_payed = total_variable_utilities + adjustments[person]
+            else:
+                total_payed = total_variable_utilities
+            total_owed_utility_payer = total_owed - total_payed
             calculation_lines.append(
-                f"But {person} already paid ${total_variable_utilities/100:.2f}"
+                f"But {person} already paid ${total_payed/100:.2f}"
                 f", so they owe ${total_owed_utility_payer/100:.2f}"
             )
             out_dict[person] = round(total_owed_utility_payer)
         else:
+            if person in adjustments:
+                total_owed = total_owed - adjustments[person]
+                calculation_lines.append(
+                    f"But {person} already paid ${adjustments[person]/100:.2f}"
+                    f", so they owe ${total_owed/100:.2f}"
+                )
             out_dict[person] = round(total_owed)
     out_strings = ["\n\n".join(calculation_lines)]
     for person, amount_owed in out_dict.items():
-        out_strings.append(
-            f"{config_data.un_map[person]} pay "
-            f"{config_data.rent_payer} {amount_owed/100:.2f}"
-        )
+        if amount_owed >= 0:
+            out_strings.append(
+                f"{config_data.un_map[person]} pay "
+                f"{config_data.rent_payer} {amount_owed/100:.2f}"
+            )
+        else:
+            out_strings.append(
+                f"{config_data.rent_payer} pay "
+                f"{config_data.un_map[person]} {-amount_owed/100:.2f}"
+            )
     return out_strings, out_dict
