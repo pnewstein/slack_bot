@@ -31,7 +31,6 @@ def get_user_dict():
     print(json.dumps(user_dict, indent=4))
 
 
-
 def test_message():
     client = WebClient(environ["SLACK_API_KEY"])
     config_data = ConfigData.fromDict(json.loads(CONFIG_FILE.read_text("utf-8")))
@@ -54,8 +53,10 @@ def run_bot(config_data: ConfigData):
         client.chat_postMessage(channel=config_data.channel_id, text=message)
         sys.stderr.write(message)
         sys.exit(5)
-        
-    output_messages, _ = calculate_rent_due(config_data, set(), utilities_owed, adjustments=adjustments)
+
+    output_messages, _ = calculate_rent_due(
+        config_data, set(), utilities_owed, adjustments=adjustments
+    )
     for message in output_messages:
         time.sleep(RATE_LIMIT)
         client.chat_postMessage(channel=config_data.channel_id, text=message)

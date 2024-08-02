@@ -11,6 +11,7 @@ class ParseError(Exception):
     def __init__(self, bad_word):
         self.bad_word = bad_word
 
+
 def get_sum_from_message(message: str) -> tuple[int, dict[str, int]]:
     """
     gets all of the numbers, assumes they are in dollars

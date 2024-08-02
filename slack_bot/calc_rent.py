@@ -70,7 +70,7 @@ def calculate_rent_due(
     config_data: ConfigData,
     utility_excluded: set[str],
     total_variable_utilities: int,
-    adjustments: dict[str: int],
+    adjustments: dict[str:int],
 ) -> tuple[list[str], dict[str, int]]:
     """
     returns a list of formated string explaining the math, and a dict for what each member pays
@@ -82,7 +82,9 @@ def calculate_rent_due(
     calculation_lines: list[str] = []
     calculation_lines.append(f"We owe ${config_data.rent/100:.2f} in rent")
     total_utilities = total_variable_utilities + config_data.xfinity
-    calculation_lines.append(f"Utilities are ${total_variable_utilities/100:.2f} above + ${config_data.xfinity/100:.2f} from xfinity")
+    calculation_lines.append(
+        f"Utilities are ${total_variable_utilities/100:.2f} above + ${config_data.xfinity/100:.2f} from xfinity"
+    )
     # Figure out utilities
     utility_payers = set(config_data.fraction_map.keys())
     utility_payers.discard("Empty")
